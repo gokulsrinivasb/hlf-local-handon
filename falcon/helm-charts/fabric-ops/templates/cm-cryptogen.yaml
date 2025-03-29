@@ -1,0 +1,101 @@
+{{/*
+Copyright National Payments Corporation of India. All Rights Reserved.
+SPDX-License-Identifier:  GPL-3.0
+*/}}
+
+{{- if .Values.fabric_actions.cryptogen }}
+
+{{- $BaseDir            := .Values.workdir }}
+{{- $Project            := .Values.project }}
+{{- $TlsCaEndPoint      := .Values.tlsca_endpoint }}
+{{- $TlsCaTlsCertFile   := .Values.tlsca_tls_certfile | default "/tmp/tlsca-cert.pem" }}
+{{- $HlfDomain          := .Values.hlf_domain }}
+{{- $ChannelArtifactDir := .Values.channel_artifact_dir | default "/scripts" }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "fabric-ops.fullname" $ }}
+  labels:
+    {{- include "fabric-ops.labels" $ | nindent 4 }}
+data:
+  cryptogen.sh: |
+
+    source /scripts/fabric_enroll.sh 
+    fabric_public_key_fetch {{ $TlsCaEndPoint }} {{ $TlsCaTlsCertFile }}
+     
+    {{- range .Values.admin_organizations }}
+      {{- if eq "orderer" .org_type }}
+        {{ $org_name     := .org_name }}
+        {{ $ica_endpoint := .ica_endpoint }}
+        {{ $cert_path    := .cert_path }}
+        {{- range .orderer_identities }}
+
+        echo "============ Starting Orderer identity enrollments. ============"          
+        {{- $msp_dir := printf "%s/%s" $BaseDir $org_name }}
+        enroll \
+          {{ .identity_name }} \
+          {{ .identity_secret }} \
+          {{ $msp_dir | default .msp_dir }} \
+          {{ $ica_endpoint }} \
+          {{ $TlsCaEndPoint }} \
+          {{ $cert_path }} \
+          {{ $TlsCaTlsCertFile }} \
+          {{ .hlf_domain | default $HlfDomain }} \
+          {{ .require_msp_enrollment | default "true" }} \
+          {{ .require_tls_enrollment | default "true" }}
+        mkdir -p {{ $msp_dir }}/{{ .identity_name }}/msp/tlscacerts
+        cp {{ $TlsCaTlsCertFile }} {{ $msp_dir }}/{{ .identity_name }}/msp/tlscacerts/ca.crt
+
+        echo "============ Archiving {{ .identity_name }} tls directory ============"
+        tar -czvf {{ $msp_dir }}/{{ .identity_name }}/tls.tar.gz --directory={{ $msp_dir }}/{{ .identity_name }}/ tls
+        sleep 5
+        upload_file {{ $msp_dir }}/{{ .identity_name }}/tls.tar.gz {{ $.Values.filestore_endpoint }}/{{ $Project }}/{{ .identity_name }}-tls-certs.tar.gz
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+     echo "============ Starting Org admin enrollments. ============"
+
+     {{- range .Values.admin_organizations }}
+     {{- $msp_dir := printf "%s/%s" $BaseDir .org_name }}
+    
+     enroll \
+        {{ .admin_identity }} \
+        {{ .admin_secret }} \
+        {{ $msp_dir | default .msp_dir }} \
+        {{ .ica_endpoint }} \
+        {{ "null" }} \
+        {{ .cert_path }} \
+        {{ "null" }} \
+        {{ $HlfDomain }} \
+        {{ .require_msp_enrollment | default "true" }} \
+        {{ .require_tls_enrollment | default "false" }}
+     
+     mkdir -p {{ $msp_dir }}/{{ .admin_identity }}/msp/tlscacerts
+     cp {{ $TlsCaTlsCertFile }} {{ $msp_dir }}/{{ .admin_identity }}/msp/tlscacerts/ca.crt
+     {{- end }}
+
+     echo "--------------------------------------------------------------------"
+     echo "Generating Genesis block file {{ .Values.block_file }} at {{ $ChannelArtifactDir }}/{{ .Values.block_file }}";
+     echo "--------------------------------------------------------------------"
+     configtxgen -profile {{ .Values.configTxProfileType }} -channelID {{ .Values.orderer_system_channel }} -outputBlock {{ $ChannelArtifactDir }}/{{ .Values.block_file }};
+     
+     if [ $? -ne 0 ]; then
+        echo "============ [ERROR] Genesis block creation failed with an error, please debug it manually using cli pod and re-run this job if necessary. ============"
+        exit
+      else
+        echo "============ [SUCCESS] Genesis block creation has been executed successfully. ============"
+      fi
+
+     sleep 5;
+     echo "--------------------------------"
+     echo "Printing generated {{ .Values.block_file }}"     
+     echo "--------------------------------"
+     configtxgen -inspectBlock {{ $ChannelArtifactDir }}/{{ .Values.block_file }} | jq .
+     echo "--------------------------------"
+     GENESIS_SHA=$(sha256sum {{ $ChannelArtifactDir }}/{{ .Values.block_file }})
+     echo "SHA256 value = $GENESIS_SHA"
+     echo "--------------------------------"
+     upload_file {{ $ChannelArtifactDir }}/{{ .Values.block_file }} {{ .Values.filestore_endpoint }}/{{ $Project }}/
+{{- end }}

@@ -1,0 +1,82 @@
+# Default values for ca-user.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nameOverride: "initialpeerorg"
+fullnameOverride: ""
+project: yourproject
+
+imagePullSecrets: []
+image:
+  repository: npcioss/hlf-builder
+  pullPolicy: IfNotPresent
+  ### Overrides the image tag whose default is the chart appVersion.
+  tag: "2.4"
+
+ica_endpoint: ica-initialpeerorg.test.local.hlf:30000
+tlsca_endpoint: tls-ca.test.local.hlf:30000
+
+orderer_endpoint: orderer0-orderer.test.local.hlf:30000
+filestore_endpoint: http://filestore.test.local.hlf:30001
+filestore_ssl: false # Make it `true` if `filestore_endpoint` is over https.
+
+hlf_domain: test.local.hlf
+fabric_actions: 
+ create_channel: true
+
+app_channels:
+  - mychannel
+   
+admin_organizations:
+  - org_type: consortium
+    org_name: initialpeerorg
+    ica_endpoint: ica-initialpeerorg.test.local.hlf:30000
+    cert_path: /root/initialpeerorg.pem
+    admin_identity: admin
+    admin_secret: initialpeerorgAdminSamplePassword
+    require_msp_enrollment: true
+    require_tls_enrollment: false
+    anchor_peers:
+    - host: peer0-initialpeerorg.test.local.hlf
+      port: "30000"
+
+csr_names_cn: IN
+csr_names_st: Maharashtra
+csr_names_l: Mumbai
+csr_names_o: Your Company Name
+
+configTxProfileType: ConsortiumProfile
+consortiumName: InitialConsortium
+core_peer_mspconfigpath_override: "" # Required only if admin_identity name is not "admin". You will have to add the complete path to the msp directory in this case.
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+  # fsGroup: 2000
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

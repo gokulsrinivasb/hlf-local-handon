@@ -1,0 +1,86 @@
+# Default values for ca-user.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nameOverride: "initialpeerorg"
+fullnameOverride: ""
+project: yourproject
+
+fabric_actions:
+  configure_org_channel: true
+
+imagePullSecrets: []
+image:
+  repository: npcioss/hlf-builder
+  pullPolicy: IfNotPresent
+  ## Overrides the image tag whose default is the chart appVersion.
+  tag: "2.4"
+
+ica_endpoint: ica-initialpeerorg.test.local.hlf:30000
+tlsca_endpoint: tls-ca.test.local.hlf:30000
+
+orderer_endpoint: orderer0-orderer.test.local.hlf:30000
+
+hlf_domain: test.local.hlf
+hlf_channel: "mychannel"
+
+admin_identity:
+  - identity_name: admin
+    identity_secret: initialpeerorgAdminSamplePassword
+    require_msp_enrollment: true
+    require_tls_enrollment: false
+
+# .Values.core_peer_mspconfigpath_override - Use only if your admin username is not "admin". 
+# This must be under /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/users/
+# Eg; /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/users/<admin-user>/msp
+# core_peer_mspconfigpath_override: /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/users/admin-initialpeerorg/msp
+
+# Organizations to be added
+organizations:
+ - name: org1
+   ica_endpoint: ica-org1.test.local.hlf:30000
+   anchor_peer: peer0-org1.test.local.hlf
+   anchor_peer_port: 30000
+   status: active # Set to `disabled` to remove an org from the network.
+ - name: org2
+   ica_endpoint: ica-org2.test.local.hlf:30000
+   anchor_peer: peer0-org2.test.local.hlf
+   anchor_peer_port: 30000
+   status: active
+
+csr_names_cn: IN
+csr_names_st: Maharashtra
+csr_names_l: Mumbai
+csr_names_o: Your Company Name
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+  # fsGroup: 2000
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
