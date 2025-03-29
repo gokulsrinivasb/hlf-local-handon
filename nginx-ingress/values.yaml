@@ -413,7 +413,7 @@ controller:
   healthStatus: false
 
   ## Sets the URI of health status location in the default server. Requires controller.healthStatus.
-  healthStatusURI: "/nginx-health"
+  #healthStatusURI: "/nginx-health"
 
   nginxStatus:
     ## Enable the NGINX stub_status, or the NGINX Plus API.
