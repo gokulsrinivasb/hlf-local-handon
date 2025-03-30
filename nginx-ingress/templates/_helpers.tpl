@@ -324,7 +324,7 @@ Build the args for the service binary.
 - -ssl-dynamic-reload={{ .Values.controller.enableSSLDynamicReload }}
 - -enable-telemetry-reporting={{ .Values.controller.telemetryReporting.enable}}
 - -weight-changes-dynamic-reload={{ .Values.controller.enableWeightChangesDynamicReload}}
-- -enable-ssl-passthrough
+- --enable-ssl-passthrough
 {{- if .Values.nginxAgent.enable }}
 - -agent=true
 - -agent-instance-group={{ default (include "nginx-ingress.controller.fullname" .) .Values.nginxAgent.instanceGroup }}
